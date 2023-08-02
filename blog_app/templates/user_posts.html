@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% for post in posts %}
+<div class="card">
+  <div class="card-header">
+    {{post}}
+  </div>
+  <div class="card-body">
+    <h5 class="card-title">{{post.title}}</h5>
+    <p class="card-text">{{ post.body|truncatechars:250 }}</p>
+    <a href="{% url 'post-delete' post.pk%}"class="btn btn-primary">Удалить</a>
+  </div>
+</div>
+
+{% endfor %}
+{% endblock %}

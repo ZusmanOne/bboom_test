@@ -1,24 +1,41 @@
-from django.shortcuts import render
-from .models import User, Post
-from rest_framework import status, viewsets, permissions
-from .serializers import PostSerializer, UserSerializer
-from rest_framework.decorators import action
-from rest_framework.response import Response
+from django.shortcuts import render, get_object_or_404, redirect
+from .models import Post, User
+from django.db import transaction
+
+from .forms import PostForm
 
 
-class PostViewSet(viewsets.ModelViewSet):
-    queryset = Post.objects.all()
-    serializer_class = PostSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+def get_users(request):
+    users = User.objects.all()
+    return render(request, 'users.html', context={'users': users})
 
 
-class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
+def get_user_posts(request, pk):
+    user = get_object_or_404(User, pk=pk)
+    user_posts = Post.objects.select_related('user').filter(user=user)
+    return render(request, 'user_posts.html', context={'posts': user_posts})
 
-    @action(detail=True)
-    def user_posts(self, request, pk=None):
-        posts = Post.objects.filter(user=pk)
-        serializer = PostSerializer(posts, many=True)
-        return Response(serializer.data)
-# Create your views here.
+
+@transaction.atomic
+def delete_post(request, pk):
+    post = get_object_or_404(Post, pk=pk)
+    context = {'post': post}
+    if request.method == 'GET':
+        return render(request, 'delete_news.html', context)
+    elif request.method == 'POST':
+        post.delete()
+        return redirect('get-users')
+
+
+@transaction.atomic
+def create_post(request):
+    if request.method == 'POST':
+        form = PostForm(request.POST)
+        if form.is_valid():
+            post = form.save(commit=False)
+            post.user = request.user
+            post.save()
+            return redirect('get-user-posts', post.user.pk)
+    else:
+        form = PostForm()
+        return render(request, 'add_post.html', {'form': form})

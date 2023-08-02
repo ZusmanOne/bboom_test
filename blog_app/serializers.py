@@ -3,15 +3,16 @@ from .models import Post, User
 
 
 class PostSerializer(serializers.ModelSerializer):
+    user = serializers.ReadOnlyField(source='user.username')
 
     class Meta:
         model = Post
-        fields = '__all__'
+        fields = ['url', 'title', 'body', 'user']
 
 
 class UserSerializer(serializers.HyperlinkedModelSerializer):
-    posts = serializers.HyperlinkedRelatedField(many=True, view_name='posts-detail', read_only=True)
-    url = serializers.HyperlinkedIdentityField(view_name='users-detail', lookup_field='pk')
+    posts = serializers.HyperlinkedRelatedField(many=True, view_name='post-detail', read_only=True)
+    url = serializers.HyperlinkedIdentityField(view_name='user-detail', lookup_field='pk')
 
     class Meta:
         model = User
